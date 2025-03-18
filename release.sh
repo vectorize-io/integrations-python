@@ -21,7 +21,7 @@ if [[ ! $confirm =~ ^[yY]$ ]]; then
 fi
 
 cd $package
-uv version $version
+uvx --from=toml-cli toml set --toml-path=pyproject.toml project.version $version
 git commit -am "Release $package $version"
 git tag $package-$version
 git push origin main
