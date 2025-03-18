@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Literal, Optional
 
 import vectorize_client
 from langchain_core.documents import Document
@@ -40,6 +40,8 @@ class VectorizeRetriever(BaseRetriever):
 
     api_token: str
     """The Vectorize API token."""
+    environment: Literal["prod", "dev", "local", "staging"] = "prod"
+    """The Vectorize API environment."""
     organization: Optional[str] = None  # noqa: UP007
     """The Vectorize organization ID."""
     pipeline_id: Optional[str] = None  # noqa: UP007
@@ -55,7 +57,23 @@ class VectorizeRetriever(BaseRetriever):
 
     @override
     def model_post_init(self, /, context: Any) -> None:
-        api = ApiClient(Configuration(access_token=self.api_token))
+        header_name = None
+        header_value = None
+        if self.environment == "prod":
+            host = "https://api.vectorize.io/v1"
+        elif self.environment == "dev":
+            host = "https://api-dev.vectorize.io/v1"
+        elif self.environment == "local":
+            host = "http://localhost:3000/api"
+            header_name = "x-lambda-api-key"
+            header_value = self.api_token
+        else:
+            host = "https://api-staging.vectorize.io/v1"
+        api = ApiClient(
+            Configuration(host=host, access_token=self.api_token, debug=True),
+            header_name,
+            header_value,
+        )
         self._pipelines = PipelinesApi(api)
 
     @staticmethod

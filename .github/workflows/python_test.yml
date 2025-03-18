@@ -1,0 +1,50 @@
+name: Python tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-langchain:
+    name: LangChain Unit Tests - Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    defaults:
+        run:
+            working-directory: ./langchain
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-dependency-glob: "langchain/uv.lock"
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Restore uv cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.uv-cache
+          key: uv-langchain-${{ hashFiles('langchain/uv.lock') }}
+          restore-keys: |
+            uv-langchain-${{ hashFiles('langchain/uv.lock') }}
+      - name: Install the project
+        run: uv sync --dev
+      - name: Run unit tests
+        env:
+          VECTORIZE_TOKEN: ${{ secrets.VECTORIZE_TOKEN }}
+          VECTORIZE_ORG: ${{ secrets.VECTORIZE_ORG }}
+          VECTORIZE_ENV: dev
+        run: uv run pytest tests -vv
+      - name: Minimize uv cache
+        run: uv cache prune --ci
