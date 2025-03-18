@@ -3,9 +3,9 @@ name = "langchain-vectorize"
 version = "0.0.1"
 description = "An integration package connecting Vectorize and LangChain"
 readme = "README.md"
-keywords = ["langchain"]
+keywords = ["langchain", "vectorize", "retrieval", "search"]
 authors = [
-    { name = "Christophe Bornet", email = "bornet.chris@gmail.com" },
+    { name = "Vectorize", email = "Vectorize <contact@vectorize.io>" },
 ]
 requires-python = ">=3.9"
 dependencies = [
@@ -26,8 +26,8 @@ classifiers = [
 license = "MIT"
 
 [project.urls]
-Repository = "https://github.com/vectorize-io/langchain-vectorize.git"
-Issues = "https://github.com/vectorize-io/langchain-vectorize/issues"
+Repository = "https://github.com/vectorize-io/integrations-python.git"
+Issues = "https://github.com/vectorize-io/integrations-python/issues"
 
 [dependency-groups]
 dev = [

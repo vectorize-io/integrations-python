@@ -1,0 +1,43 @@
+name: Langchain Release
+on:
+  workflow_dispatch: {}
+  push:
+    tags:
+      - "langchain-*"
+
+concurrency:
+  group: release-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-dependency-glob: "langchain/uv.lock"
+
+      - name: Build
+        run: |
+          cd langchain
+          uv sync --dev
+          uv build
+
+      - name: Publish package to Pypi
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: langchain/dist
+
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "langchain/dist/*.whl"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: false
