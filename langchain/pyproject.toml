@@ -5,7 +5,7 @@ description = "An integration package connecting Vectorize and LangChain"
 readme = "README.md"
 keywords = ["langchain", "vectorize", "retrieval", "search"]
 authors = [
-    { name = "Vectorize", email = "Vectorize <contact@vectorize.io>" },
+    { name = "Vectorize", email = "contact@vectorize.io" },
 ]
 requires-python = ">=3.9"
 dependencies = [
