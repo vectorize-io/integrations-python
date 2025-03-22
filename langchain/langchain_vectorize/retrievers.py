@@ -36,7 +36,76 @@ _NOT_SET = object()
 
 
 class VectorizeRetriever(BaseRetriever):
-    """Vectorize retriever."""
+    """Vectorize retriever.
+
+    Setup:
+        Install package ``langchain-vectorize``
+
+        .. code-block:: bash
+
+            pip install -U langchain-vectorize
+
+    Init args:
+        api_token: str
+            The Vectorize API token.
+        environment: Literal["prod", "dev", "local", "staging"]
+            The Vectorize API environment. Defaults to "prod".
+        organization: Optional[str]
+            The Vectorize organization ID. Defaults to None.
+        pipeline_id: Optional[str]
+            The Vectorize pipeline ID. Defaults to None.
+        num_results: int
+            Number of documents to return. Defaults to 5.
+        rerank: bool
+            Whether to rerank the results. Defaults to False.
+        metadata_filters: list[dict[str, Any]]
+            The metadata filters to apply when retrieving the documents. Defaults to [].
+
+    Instantiate:
+        .. code-block:: python
+
+            from langchain_vectorize import VectorizeRetriever
+
+            retriever = VectorizeRetriever(
+                api_token="xxxxx", "organization"="1234", "pipeline_id"="5678"
+            )
+
+    Usage:
+        .. code-block:: python
+
+            query = "what year was breath of the wild released?"
+            retriever.invoke(query)
+
+    Use within a chain:
+        .. code-block:: python
+
+            from langchain_core.output_parsers import StrOutputParser
+            from langchain_core.prompts import ChatPromptTemplate
+            from langchain_core.runnables import RunnablePassthrough
+            from langchain_openai import ChatOpenAI
+
+            prompt = ChatPromptTemplate.from_template(
+                \"\"\"Answer the question based only on the context provided.
+
+            Context: {context}
+
+            Question: {question}\"\"\"
+            )
+
+            llm = ChatOpenAI(model="gpt-4o")
+
+            def format_docs(docs):
+                return "\n\n".join(doc.page_content for doc in docs)
+
+            chain = (
+                {"context": retriever | format_docs, "question": RunnablePassthrough()}
+                | prompt
+                | llm
+                | StrOutputParser()
+            )
+
+            chain.invoke("how many units did breath of the wild sell in 2020")
+    """  # noqa: D301
 
     api_token: str
     """The Vectorize API token."""
@@ -146,7 +215,8 @@ class VectorizeRetriever(BaseRetriever):
 
             .. code-block:: python
 
-                retriever.invoke("query")
+                query = "what year was breath of the wild released?"
+                docs = retriever.invoke(query, num_results=2)
         """
         kwargs = {}
         if organization:
