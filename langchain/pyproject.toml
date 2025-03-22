@@ -1,6 +1,6 @@
 [project]
 name = "langchain-vectorize"
-version = "0.0.2"
+version = "0.0.3"
 description = "An integration package connecting Vectorize and LangChain"
 readme = "README.md"
 keywords = ["langchain", "vectorize", "retrieval", "search"]
@@ -65,7 +65,7 @@ show_error_codes = true
 show_error_context = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["langchain-vectorize"]
+packages = ["langchain_vectorize"]
 
 [build-system]
 requires = ["hatchling"]
