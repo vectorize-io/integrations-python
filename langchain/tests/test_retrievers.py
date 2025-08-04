@@ -189,6 +189,7 @@ def test_retrieve_invoke_args(
     pipeline_id: str,
 ) -> None:
     retriever = VectorizeRetriever(environment=environment, api_token=api_token)
+
     start = time.time()
     while True:
         docs = retriever.invoke(
