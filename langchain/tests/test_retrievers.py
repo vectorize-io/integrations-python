@@ -175,9 +175,16 @@ def test_retrieve_init_args(
     )
     start = time.time()
     while True:
-        docs = retriever.invoke(input="What are you?")
-        if len(docs) == 2:
-            break
+        try:
+            docs = retriever.invoke(input="What are you?")
+            if len(docs) == 2:
+                break
+        except Exception as e:
+            logging.exception("Error during retrieval: %s", e)
+            if "503" in str(e):
+                continue
+            raise e
+
         if time.time() - start > 180:
             msg = "Docs not retrieved in time"
             raise RuntimeError(msg)
@@ -193,15 +200,23 @@ def test_retrieve_invoke_args(
     retriever = VectorizeRetriever(environment=environment, api_token=api_token)
     start = time.time()
     while True:
-        docs = retriever.invoke(
-            input="What are you?",
-            organization=org_id,
-            pipeline_id=pipeline_id,
-            num_results=2,
-        )
-        if len(docs) == 2:
-            break
+        try:
+            docs = retriever.invoke(
+                input="What are you?",
+                organization=org_id,
+                pipeline_id=pipeline_id,
+                num_results=2,
+            )
+            if len(docs) == 2:
+                break
+
+        except Exception as e:
+            logging.exception("Error during retrieval: %s", e)
+            if "503" in str(e):
+                continue
+            raise e
         if time.time() - start > 180:
             msg = "Docs not retrieved in time"
             raise RuntimeError(msg)
+
         time.sleep(1)
