@@ -71,10 +71,9 @@ def pipeline_id(api_client: v.ApiClient, org_id: str) -> Iterator[str]:
     connectors_api = v.SourceConnectorsApi(api_client)
     response = connectors_api.create_source_connector(
         org_id,
-            v.CreateSourceConnectorRequest(v.FileUpload(
-        name="from api",
-        type="FILE_UPLOAD"
-    ))
+        v.CreateSourceConnectorRequest(
+            v.FileUpload(name="from api", type="FILE_UPLOAD")
+        ),
     )
     source_connector_id = response.connector.id
     logging.info("Created source connector %s", source_connector_id)
@@ -110,13 +109,17 @@ def pipeline_id(api_client: v.ApiClient, org_id: str) -> Iterator[str]:
     else:
         logging.info("Upload successful")
 
-    ai_platforms = v.AIPlatformConnectorsApi(api_client).get_ai_platform_connectors(org_id)
+    ai_platforms = v.AIPlatformConnectorsApi(api_client).get_ai_platform_connectors(
+        org_id
+    )
     builtin_ai_platform = next(
         c.id for c in ai_platforms.ai_platform_connectors if c.type == "VECTORIZE"
     )
     logging.info("Using AI platform %s", builtin_ai_platform)
 
-    vector_databases = v.DestinationConnectorsApi(api_client).get_destination_connectors(org_id)
+    vector_databases = v.DestinationConnectorsApi(
+        api_client
+    ).get_destination_connectors(org_id)
     builtin_vector_db = next(
         c.id for c in vector_databases.destination_connectors if c.type == "VECTORIZE"
     )
