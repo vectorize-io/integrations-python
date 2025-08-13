@@ -180,10 +180,9 @@ def test_retrieve_init_args(
             if len(docs) == 2:
                 break
         except Exception as e:
-            logging.exception("Error during retrieval: %s", e)
             if "503" in str(e):
                 continue
-            raise e
+            raise RuntimeError(e) from e
 
         if time.time() - start > 180:
             msg = "Docs not retrieved in time"
@@ -211,10 +210,9 @@ def test_retrieve_invoke_args(
                 break
 
         except Exception as e:
-            logging.exception("Error during retrieval: %s", e)
             if "503" in str(e):
                 continue
-            raise e
+            raise RuntimeError(e) from e
         if time.time() - start > 180:
             msg = "Docs not retrieved in time"
             raise RuntimeError(msg)
