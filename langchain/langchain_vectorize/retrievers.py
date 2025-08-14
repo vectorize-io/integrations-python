@@ -4,20 +4,18 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Literal, Optional
 
-import vectorize_client
 from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
 from typing_extensions import override
-from vectorize_client import (
-    ApiClient,
-    Configuration,
-    PipelinesApi,
-    RetrieveDocumentsRequest,
-)
+from vectorize_client.api.pipelines_api import PipelinesApi
+from vectorize_client.api_client import ApiClient
+from vectorize_client.configuration import Configuration
+from vectorize_client.models.retrieve_documents_request import RetrieveDocumentsRequest
 
 if TYPE_CHECKING:
     from langchain_core.callbacks import CallbackManagerForRetrieverRun
     from langchain_core.runnables import RunnableConfig
+    from vectorize_client.models.document import Document as VectorizeDocument
 
 _METADATA_FIELDS = {
     "relevancy",
@@ -122,7 +120,7 @@ class VectorizeRetriever(BaseRetriever):
     metadata_filters: list[dict[str, Any]] = []
     """The metadata filters to apply when retrieving the documents."""
 
-    _pipelines: PipelinesApi | None = None
+    _pipelines: PipelinesApi = _NOT_SET  # type: ignore[assignment]
 
     @override
     def model_post_init(self, /, context: Any) -> None:
@@ -146,7 +144,7 @@ class VectorizeRetriever(BaseRetriever):
         self._pipelines = PipelinesApi(api)
 
     @staticmethod
-    def _convert_document(document: vectorize_client.models.Document) -> Document:
+    def _convert_document(document: VectorizeDocument) -> Document:
         metadata = {field: getattr(document, field) for field in _METADATA_FIELDS}
         return Document(id=document.id, page_content=document.text, metadata=metadata)
 
@@ -162,14 +160,29 @@ class VectorizeRetriever(BaseRetriever):
         rerank: bool | None = None,
         metadata_filters: list[dict[str, Any]] | None = None,
     ) -> list[Document]:
-        request = RetrieveDocumentsRequest(
+        request = RetrieveDocumentsRequest(  # type: ignore[call-arg]
             question=query,
             num_results=num_results or self.num_results,
             rerank=rerank or self.rerank,
             metadata_filters=metadata_filters or self.metadata_filters,
         )
+        organization_ = organization or self.organization
+        if not organization_:
+            msg = (
+                "Organization must be set either at initialization "
+                "or in the invoke method."
+            )
+            raise ValueError(msg)
+        pipeline_id_ = pipeline_id or self.pipeline_id
+        if not pipeline_id_:
+            msg = (
+                "Pipeline ID must be set either at initialization "
+                "or in the invoke method."
+            )
+            raise ValueError(msg)
+
         response = self._pipelines.retrieve_documents(
-            organization or self.organization, pipeline_id or self.pipeline_id, request
+            organization_, pipeline_id_, request
         )
         return [self._convert_document(doc) for doc in response.documents]
 
@@ -181,9 +194,10 @@ class VectorizeRetriever(BaseRetriever):
         *,
         organization: str = "",
         pipeline_id: str = "",
-        num_results: int = _NOT_SET,
-        rerank: bool = _NOT_SET,
-        metadata_filters: list[dict[str, Any]] = _NOT_SET,
+        num_results: int = _NOT_SET,  # type: ignore[assignment]
+        rerank: bool = _NOT_SET,  # type: ignore[assignment]
+        metadata_filters: list[dict[str, Any]] = _NOT_SET,  # type: ignore[assignment]
+        **_kwargs: Any,
     ) -> list[Document]:
         """Invoke the retriever to get relevant documents.
 
@@ -218,16 +232,15 @@ class VectorizeRetriever(BaseRetriever):
                 query = "what year was breath of the wild released?"
                 docs = retriever.invoke(query, num_results=2)
         """
-        kwargs = {}
         if organization:
-            kwargs["organization"] = organization
+            _kwargs["organization"] = organization
         if pipeline_id:
-            kwargs["pipeline_id"] = pipeline_id
+            _kwargs["pipeline_id"] = pipeline_id
         if num_results is not _NOT_SET:
-            kwargs["num_results"] = num_results
+            _kwargs["num_results"] = num_results
         if rerank is not _NOT_SET:
-            kwargs["rerank"] = rerank
+            _kwargs["rerank"] = rerank
         if metadata_filters is not _NOT_SET:
-            kwargs["metadata_filters"] = metadata_filters
+            _kwargs["metadata_filters"] = metadata_filters
 
-        return super().invoke(input, config, **kwargs)
+        return super().invoke(input, config, **_kwargs)

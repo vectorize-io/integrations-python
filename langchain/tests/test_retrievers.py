@@ -8,8 +8,42 @@ from typing import Literal
 
 import pytest
 import urllib3
-import vectorize_client as v
-from vectorize_client import ApiClient
+from vectorize_client.api.ai_platform_connectors_api import AIPlatformConnectorsApi
+from vectorize_client.api.destination_connectors_api import DestinationConnectorsApi
+from vectorize_client.api.pipelines_api import PipelinesApi
+from vectorize_client.api.source_connectors_api import SourceConnectorsApi
+from vectorize_client.api.uploads_api import UploadsApi
+from vectorize_client.api_client import ApiClient
+from vectorize_client.configuration import Configuration
+from vectorize_client.models.ai_platform_config_schema import AIPlatformConfigSchema
+from vectorize_client.models.ai_platform_type_for_pipeline import (
+    AIPlatformTypeForPipeline,
+)
+from vectorize_client.models.create_source_connector_request import (
+    CreateSourceConnectorRequest,
+)
+from vectorize_client.models.destination_connector_type_for_pipeline import (
+    DestinationConnectorTypeForPipeline,
+)
+from vectorize_client.models.file_upload import FileUpload
+from vectorize_client.models.pipeline_ai_platform_connector_schema import (
+    PipelineAIPlatformConnectorSchema,
+)
+from vectorize_client.models.pipeline_configuration_schema import (
+    PipelineConfigurationSchema,
+)
+from vectorize_client.models.pipeline_destination_connector_schema import (
+    PipelineDestinationConnectorSchema,
+)
+from vectorize_client.models.pipeline_source_connector_schema import (
+    PipelineSourceConnectorSchema,
+)
+from vectorize_client.models.schedule_schema import ScheduleSchema
+from vectorize_client.models.schedule_schema_type import ScheduleSchemaType
+from vectorize_client.models.source_connector_type import SourceConnectorType
+from vectorize_client.models.start_file_upload_to_connector_request import (
+    StartFileUploadToConnectorRequest,
+)
 
 from langchain_vectorize.retrievers import VectorizeRetriever
 
@@ -38,7 +72,7 @@ def environment() -> Literal["prod", "dev", "local", "staging"]:
     if env not in ["prod", "dev", "local", "staging"]:
         msg = "Invalid VECTORIZE_ENV environment variable."
         raise ValueError(msg)
-    return env
+    return env  # type: ignore[return-value]
 
 
 @pytest.fixture(scope="session")
@@ -56,8 +90,8 @@ def api_client(api_token: str, environment: str) -> Iterator[ApiClient]:
     else:
         host = "https://api-staging.vectorize.io/v1"
 
-    with v.ApiClient(
-        v.Configuration(host=host, access_token=api_token, debug=True),
+    with ApiClient(
+        Configuration(host=host, access_token=api_token, debug=True),
         header_name,
         header_value,
     ) as api:
@@ -65,24 +99,22 @@ def api_client(api_token: str, environment: str) -> Iterator[ApiClient]:
 
 
 @pytest.fixture(scope="session")
-def pipeline_id(api_client: v.ApiClient, org_id: str) -> Iterator[str]:
-    pipelines = v.PipelinesApi(api_client)
+def pipeline_id(api_client: ApiClient, org_id: str) -> Iterator[str]:
+    pipelines = PipelinesApi(api_client)
 
-    connectors_api = v.SourceConnectorsApi(api_client)
+    connectors_api = SourceConnectorsApi(api_client)
     response = connectors_api.create_source_connector(
         org_id,
-        v.CreateSourceConnectorRequest(
-            v.FileUpload(name="from api", type="FILE_UPLOAD")
-        ),
+        CreateSourceConnectorRequest(FileUpload(name="from api", type="FILE_UPLOAD")),
     )
     source_connector_id = response.connector.id
     logging.info("Created source connector %s", source_connector_id)
 
-    uploads_api = v.UploadsApi(api_client)
+    uploads_api = UploadsApi(api_client)
     upload_response = uploads_api.start_file_upload_to_connector(
         org_id,
         source_connector_id,
-        v.StartFileUploadToConnectorRequest(
+        StartFileUploadToConnectorRequest(  # type: ignore[call-arg]
             name="research.pdf",
             content_type="application/pdf",
             metadata=json.dumps({"created-from-api": True}),
@@ -109,7 +141,7 @@ def pipeline_id(api_client: v.ApiClient, org_id: str) -> Iterator[str]:
     else:
         logging.info("Upload successful")
 
-    ai_platforms = v.AIPlatformConnectorsApi(api_client).get_ai_platform_connectors(
+    ai_platforms = AIPlatformConnectorsApi(api_client).get_ai_platform_connectors(
         org_id
     )
     builtin_ai_platform = next(
@@ -117,9 +149,9 @@ def pipeline_id(api_client: v.ApiClient, org_id: str) -> Iterator[str]:
     )
     logging.info("Using AI platform %s", builtin_ai_platform)
 
-    vector_databases = v.DestinationConnectorsApi(
-        api_client
-    ).get_destination_connectors(org_id)
+    vector_databases = DestinationConnectorsApi(api_client).get_destination_connectors(
+        org_id
+    )
     builtin_vector_db = next(
         c.id for c in vector_databases.destination_connectors if c.type == "VECTORIZE"
     )
@@ -127,26 +159,26 @@ def pipeline_id(api_client: v.ApiClient, org_id: str) -> Iterator[str]:
 
     pipeline_response = pipelines.create_pipeline(
         org_id,
-        v.PipelineConfigurationSchema(
+        PipelineConfigurationSchema(  # type: ignore[call-arg]
             source_connectors=[
-                v.PipelineSourceConnectorSchema(
+                PipelineSourceConnectorSchema(
                     id=source_connector_id,
-                    type=v.SourceConnectorType.FILE_UPLOAD,
+                    type=SourceConnectorType.FILE_UPLOAD,
                     config={},
                 )
             ],
-            destination_connector=v.PipelineDestinationConnectorSchema(
+            destination_connector=PipelineDestinationConnectorSchema(
                 id=builtin_vector_db,
-                type="VECTORIZE",
+                type=DestinationConnectorTypeForPipeline.VECTORIZE,
                 config={},
             ),
-            ai_platform_connector=v.PipelineAIPlatformConnectorSchema(
+            ai_platform_connector=PipelineAIPlatformConnectorSchema(
                 id=builtin_ai_platform,
-                type="VECTORIZE",
-                config={},
+                type=AIPlatformTypeForPipeline.VECTORIZE,
+                config=AIPlatformConfigSchema(),
             ),
             pipeline_name="Test pipeline",
-            schedule=v.ScheduleSchema(type="manual"),
+            schedule=ScheduleSchema(type=ScheduleSchemaType.MANUAL),
         ),
     )
     pipeline_id = pipeline_response.data.id
