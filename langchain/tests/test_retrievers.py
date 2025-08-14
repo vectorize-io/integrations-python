@@ -68,16 +68,14 @@ def api_client(api_token: str, environment: str) -> Iterator[ApiClient]:
 def pipeline_id(api_client: v.ApiClient, org_id: str) -> Iterator[str]:
     pipelines = v.PipelinesApi(api_client)
 
-    connectors_api = v.ConnectorsApi(api_client)
+    connectors_api = v.SourceConnectorsApi(api_client)
     response = connectors_api.create_source_connector(
         org_id,
-        [
-            v.CreateSourceConnector(
-                name="from api", type=v.SourceConnectorType.FILE_UPLOAD
-            )
-        ],
+        v.CreateSourceConnectorRequest(
+            v.FileUpload(name="from api", type="FILE_UPLOAD")
+        ),
     )
-    source_connector_id = response.connectors[0].id
+    source_connector_id = response.connector.id
     logging.info("Created source connector %s", source_connector_id)
 
     uploads_api = v.UploadsApi(api_client)
@@ -111,13 +109,17 @@ def pipeline_id(api_client: v.ApiClient, org_id: str) -> Iterator[str]:
     else:
         logging.info("Upload successful")
 
-    ai_platforms = connectors_api.get_ai_platform_connectors(org_id)
+    ai_platforms = v.AIPlatformConnectorsApi(api_client).get_ai_platform_connectors(
+        org_id
+    )
     builtin_ai_platform = next(
         c.id for c in ai_platforms.ai_platform_connectors if c.type == "VECTORIZE"
     )
     logging.info("Using AI platform %s", builtin_ai_platform)
 
-    vector_databases = connectors_api.get_destination_connectors(org_id)
+    vector_databases = v.DestinationConnectorsApi(
+        api_client
+    ).get_destination_connectors(org_id)
     builtin_vector_db = next(
         c.id for c in vector_databases.destination_connectors if c.type == "VECTORIZE"
     )
@@ -127,24 +129,24 @@ def pipeline_id(api_client: v.ApiClient, org_id: str) -> Iterator[str]:
         org_id,
         v.PipelineConfigurationSchema(
             source_connectors=[
-                v.SourceConnectorSchema(
+                v.PipelineSourceConnectorSchema(
                     id=source_connector_id,
                     type=v.SourceConnectorType.FILE_UPLOAD,
                     config={},
                 )
             ],
-            destination_connector=v.DestinationConnectorSchema(
+            destination_connector=v.PipelineDestinationConnectorSchema(
                 id=builtin_vector_db,
-                type=v.DestinationConnectorType.VECTORIZE,
+                type="VECTORIZE",
                 config={},
             ),
-            ai_platform=v.AIPlatformSchema(
+            ai_platform_connector=v.PipelineAIPlatformConnectorSchema(
                 id=builtin_ai_platform,
-                type=v.AIPlatformType.VECTORIZE,
-                config=v.AIPlatformConfigSchema(),
+                type="VECTORIZE",
+                config={},
             ),
             pipeline_name="Test pipeline",
-            schedule=v.ScheduleSchema(type=v.ScheduleSchemaType.MANUAL),
+            schedule=v.ScheduleSchema(type="manual"),
         ),
     )
     pipeline_id = pipeline_response.data.id
@@ -173,9 +175,15 @@ def test_retrieve_init_args(
     )
     start = time.time()
     while True:
-        docs = retriever.invoke(input="What are you?")
-        if len(docs) == 2:
-            break
+        try:
+            docs = retriever.invoke(input="What are you?")
+            if len(docs) == 2:
+                break
+        except Exception as e:
+            if "503" in str(e):
+                continue
+            raise RuntimeError(e) from e
+
         if time.time() - start > 180:
             msg = "Docs not retrieved in time"
             raise RuntimeError(msg)
@@ -191,15 +199,22 @@ def test_retrieve_invoke_args(
     retriever = VectorizeRetriever(environment=environment, api_token=api_token)
     start = time.time()
     while True:
-        docs = retriever.invoke(
-            input="What are you?",
-            organization=org_id,
-            pipeline_id=pipeline_id,
-            num_results=2,
-        )
-        if len(docs) == 2:
-            break
+        try:
+            docs = retriever.invoke(
+                input="What are you?",
+                organization=org_id,
+                pipeline_id=pipeline_id,
+                num_results=2,
+            )
+            if len(docs) == 2:
+                break
+
+        except Exception as e:
+            if "503" in str(e):
+                continue
+            raise RuntimeError(e) from e
         if time.time() - start > 180:
             msg = "Docs not retrieved in time"
             raise RuntimeError(msg)
+
         time.sleep(1)

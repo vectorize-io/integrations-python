@@ -44,7 +44,7 @@ jobs:
         env:
           VECTORIZE_TOKEN: ${{ secrets.VECTORIZE_TOKEN }}
           VECTORIZE_ORG: ${{ secrets.VECTORIZE_ORG }}
-          VECTORIZE_ENV: dev
+          VECTORIZE_ENV: ${{ secrets.VECTORIZE_ENV }}
         run: uv run pytest tests -vv
       - name: Minimize uv cache
         run: uv cache prune --ci
