@@ -111,9 +111,9 @@ class VectorizeRetriever(BaseRetriever):
     """The Vectorize API token."""
     environment: Literal["prod", "dev", "local", "staging"] = "prod"
     """The Vectorize API environment."""
-    organization: Optional[str] = None  # noqa: UP007
+    organization: Optional[str] = None
     """The Vectorize organization ID."""
-    pipeline_id: Optional[str] = None  # noqa: UP007
+    pipeline_id: Optional[str] = None
     """The Vectorize pipeline ID."""
     num_results: int = 5
     """The number of documents to return."""

@@ -13,6 +13,8 @@ from vectorize_client import ApiClient
 
 from langchain_vectorize.retrievers import VectorizeRetriever
 
+logger = logging.getLogger(__name__)
+
 
 @pytest.fixture(scope="session")
 def api_token() -> str:
@@ -35,7 +37,7 @@ def org_id() -> str:
 @pytest.fixture(scope="session")
 def environment() -> Literal["prod", "dev", "local", "staging"]:
     env = os.getenv("VECTORIZE_ENV", "prod")
-    if env not in ["prod", "dev", "local", "staging"]:
+    if env not in {"prod", "dev", "local", "staging"}:
         msg = "Invalid VECTORIZE_ENV environment variable."
         raise ValueError(msg)
     return env
@@ -76,7 +78,7 @@ def pipeline_id(api_client: v.ApiClient, org_id: str) -> Iterator[str]:
         ),
     )
     source_connector_id = response.connector.id
-    logging.info("Created source connector %s", source_connector_id)
+    logger.info("Created source connector %s", source_connector_id)
 
     uploads_api = v.UploadsApi(api_client)
     upload_response = uploads_api.start_file_upload_to_connector(
@@ -107,7 +109,7 @@ def pipeline_id(api_client: v.ApiClient, org_id: str) -> Iterator[str]:
         msg = "Upload failed:"
         raise ValueError(msg)
     else:
-        logging.info("Upload successful")
+        logger.info("Upload successful")
 
     ai_platforms = v.AIPlatformConnectorsApi(api_client).get_ai_platform_connectors(
         org_id
@@ -115,7 +117,7 @@ def pipeline_id(api_client: v.ApiClient, org_id: str) -> Iterator[str]:
     builtin_ai_platform = next(
         c.id for c in ai_platforms.ai_platform_connectors if c.type == "VECTORIZE"
     )
-    logging.info("Using AI platform %s", builtin_ai_platform)
+    logger.info("Using AI platform %s", builtin_ai_platform)
 
     vector_databases = v.DestinationConnectorsApi(
         api_client
@@ -123,7 +125,7 @@ def pipeline_id(api_client: v.ApiClient, org_id: str) -> Iterator[str]:
     builtin_vector_db = next(
         c.id for c in vector_databases.destination_connectors if c.type == "VECTORIZE"
     )
-    logging.info("Using destination connector %s", builtin_vector_db)
+    logger.info("Using destination connector %s", builtin_vector_db)
 
     pipeline_response = pipelines.create_pipeline(
         org_id,
@@ -150,14 +152,14 @@ def pipeline_id(api_client: v.ApiClient, org_id: str) -> Iterator[str]:
         ),
     )
     pipeline_id = pipeline_response.data.id
-    logging.info("Created pipeline %s", pipeline_id)
+    logger.info("Created pipeline %s", pipeline_id)
 
     yield pipeline_id
 
     try:
         pipelines.delete_pipeline(org_id, pipeline_id)
     except Exception:
-        logging.exception("Failed to delete pipeline %s", pipeline_id)
+        logger.exception("Failed to delete pipeline %s", pipeline_id)
 
 
 def test_retrieve_init_args(
