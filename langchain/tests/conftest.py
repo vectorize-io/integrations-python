@@ -116,7 +116,7 @@ def pipeline_id(api_client: ApiClient, org_id: str) -> Iterator[str]:
     upload_response = uploads_api.start_file_upload_to_connector(
         org_id,
         source_connector_id,
-        StartFileUploadToConnectorRequest(  # type: ignore[call-arg]
+        StartFileUploadToConnectorRequest(
             name="research.pdf",
             content_type="application/pdf",
             metadata=json.dumps({"created-from-api": True}),
@@ -157,7 +157,7 @@ def pipeline_id(api_client: ApiClient, org_id: str) -> Iterator[str]:
 
     pipeline_response = pipelines.create_pipeline(
         org_id,
-        PipelineConfigurationSchema(  # type: ignore[call-arg]
+        PipelineConfigurationSchema(
             source_connectors=[
                 PipelineSourceConnectorSchema(
                     id=source_connector_id,
@@ -182,7 +182,7 @@ def pipeline_id(api_client: ApiClient, org_id: str) -> Iterator[str]:
     pipeline_id = pipeline_response.data.id
 
     # Wait for the pipeline to be created
-    request = RetrieveDocumentsRequest(  # type: ignore[call-arg]
+    request = RetrieveDocumentsRequest(
         question="query",
         num_results=2,
     )
