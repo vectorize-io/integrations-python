@@ -33,7 +33,11 @@ Issues = "https://github.com/vectorize-io/integrations-python/issues"
 dev = [
     "mypy>=1.17.1,<1.18",
     "pytest>=8.3.3",
+    "pytest-asyncio>=0.26.0",
     "ruff>=0.12.7,<0.13",
+    "langchain-tests>=0.3.20",
+    "requests>=2.31.0",
+    "types-requests>=2.31.0",
 ]
 
 [tool.ruff.lint]
@@ -73,3 +77,5 @@ packages = ["langchain_vectorize"]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
