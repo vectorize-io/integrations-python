@@ -160,7 +160,7 @@ class VectorizeRetriever(BaseRetriever):
         rerank: bool | None = None,
         metadata_filters: list[dict[str, Any]] | None = None,
     ) -> list[Document]:
-        request = RetrieveDocumentsRequest(  # type: ignore[call-arg]
+        request = RetrieveDocumentsRequest(
             question=query,
             num_results=num_results or self.num_results,
             rerank=rerank or self.rerank,
