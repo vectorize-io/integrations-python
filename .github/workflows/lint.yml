@@ -17,7 +17,7 @@ jobs:
         working-directory: ./langchain
     strategy:
       matrix:
-        python-version: ['3.9', '3.13']
+        python-version: ['3.10', '3.13']
     steps:
       - uses: actions/checkout@v4
         with:
@@ -30,7 +30,10 @@ jobs:
       - name: "Set up Python"
         uses: actions/setup-python@v5
         with:
-          python-version-file: "langchain/pyproject.toml"
+          # Use the matrix version. Reading pyproject's requires-python made
+          # setup-python pick the newest release (3.14), which pyo3-ffi 0.22
+          # cannot build against, so the matrix was never actually tested.
+          python-version: ${{ matrix.python-version }}
       - name: Restore uv cache
         uses: actions/cache@v4
         with:

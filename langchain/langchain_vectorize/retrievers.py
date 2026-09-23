@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal, Optional
+from typing import TYPE_CHECKING, Any, Literal
 
 from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
@@ -109,9 +109,9 @@ class VectorizeRetriever(BaseRetriever):
     """The Vectorize API token."""
     environment: Literal["prod", "dev", "local", "staging"] = "prod"
     """The Vectorize API environment."""
-    organization: Optional[str] = None
+    organization: str | None = None
     """The Vectorize organization ID."""
-    pipeline_id: Optional[str] = None
+    pipeline_id: str | None = None
     """The Vectorize pipeline ID."""
     num_results: int = 5
     """The number of documents to return."""
